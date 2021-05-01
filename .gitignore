@@ -1,3 +1,8 @@
+# Videos and Weights
+*.mp4
+*.weights
+*.pb
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
