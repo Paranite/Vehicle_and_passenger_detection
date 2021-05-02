@@ -155,7 +155,7 @@ def start_video_processing():
     object_tracking(None, video_path=root.filename if rbutton_file.get() else None,
                     vid_output_path=root.videofiledir if vid_out_var.get() else None,
                     text_output_path=root.textfiledir if text_out_var.get() else None, tracking=var_tracking_cb.get(),
-                    tracker_max_age=int(entry_tracking_age.get()), face_det=var_person_det_cb.get(),
+                    tracker_max_age=int(entry_tracking_age.get()), passenger_det=var_person_det_cb.get(),
                     face_score_threshold=float(entry_face_det_prob.get()),
                     color=var_color_method.get() if var_color_cb.get() else None,
                     score_threshold=float(entry_vehicle_det_prob.get()),

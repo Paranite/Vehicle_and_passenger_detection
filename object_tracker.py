@@ -12,7 +12,7 @@ import os
 import cv2
 import numpy as np
 import tensorflow as tf
-from yolov3.utils import Load_Yolo_model, image_preprocess, postprocess_boxes, nms, draw_bbox, read_class_names
+from yolov3.utils import Load_Yolo_model, image_preprocess, postprocess_boxes, nms, draw_bbox, read_class_names, write_csv
 from yolov3.configs import *
 import time
 
@@ -29,7 +29,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 def object_tracking(Yolo, video_path, vid_output_path, text_output_path, input_size=416, show=False,
                     CLASSES=YOLO_COCO_CLASSES, score_threshold=0.3, iou_threshold=0.45,
                     rectangle_colors='', tracking=True, track_only=[], tracker_max_age=30,
-                    face_det=False, face_score_threshold=0.3, color="bincount"):
+                    passenger_det=False, face_score_threshold=0.3, color="bincount"):
     """
     Do detection on video
     :param Yolo: <model_obj> YOLO model for vehicle detection
@@ -51,6 +51,15 @@ def object_tracking(Yolo, video_path, vid_output_path, text_output_path, input_s
     """
     if not Yolo:
         Yolo = Load_Yolo_model()
+
+    if passenger_det:
+        passenger_det = tf.keras.models.load_model("face_detection/RFB")
+    else:
+        passenger_det = None
+
+    if text_output_path:
+        write_csv([["x1", "y1", "x2", "y2", "id", "class", "probability", "color" if color else None,
+                    "passengers" if passenger_det else None]], text_output_path)
 
     # Definition of the deep sort parameters
     max_cosine_distance = 0.7
@@ -146,7 +155,8 @@ def object_tracking(Yolo, video_path, vid_output_path, text_output_path, input_s
 
         # draw detection on frame
         # print(tracked_bboxes)
-        image = draw_bbox(original_frame, tracked_bboxes, CLASSES=CLASSES, tracking=True, color=color, text_output_path=text_output_path)
+        image = draw_bbox(original_frame, tracked_bboxes, CLASSES=CLASSES, tracking=True, color=color,
+                          text_output_path=text_output_path, passenger_detector=passenger_det)
 
         t3 = time.time()
         times.append(t2 - t1)

@@ -133,6 +133,7 @@ def image_preprocess(image, target_size, gt_boxes=None):
         gt_boxes[:, [1, 3]] = gt_boxes[:, [1, 3]] * scale + dh
         return image_paded, gt_boxes
 
+
 def write_csv(data, path):
     with open(path, 'a', newline='') as outfile:
         writer = csv.writer(outfile)
@@ -161,7 +162,7 @@ def bincount_numexpr_app(a):
 
 
 def draw_bbox(image, bboxes, CLASSES=YOLO_COCO_CLASSES, show_label=True, show_confidence=True, Text_colors=(0, 0, 0),
-              rectangle_colors='', tracking=False, color='bincount', text_output_path=None):
+              rectangle_colors='', tracking=False, color='bincount', text_output_path=None, passenger_detector=None, passenger_threshold = 0.3):
     # show_confidence2 is for when you use the tracker since show_confidence is used for displaying the object ID
     NUM_CLASS = read_class_names(CLASSES)
     num_classes = len(NUM_CLASS)
@@ -175,19 +176,33 @@ def draw_bbox(image, bboxes, CLASSES=YOLO_COCO_CLASSES, show_label=True, show_co
     random.shuffle(colors)
     random.seed(None)
 
-    if color == "bincount":
+    if color or passenger_detector:
         # more approaches:
         # https://stackoverflow.com/questions/50899692/most-dominant-color-in-rgb-image-opencv-numpy-python
         # https://www.geeksforgeeks.org/extract-dominant-colors-of-an-image-using-python/
         # https://www.timpoulsen.com/2018/finding-the-dominant-colors-of-an-image.html
         color_dict = []
+        passenger_dict = []
         for i, bbox in enumerate(bboxes):
             coor = np.array(bbox[:4], dtype=np.int32)
             cropped_object = image[coor[1]:coor[3], coor[0]:coor[2]]
-            color_res = bincount_numexpr_app(cropped_object)
-            color_dict.append(color_res)
-            if text_output_path:
-                bboxes[i].append(color_res)
+            if color == "bincount":
+                color_res = bincount_numexpr_app(cropped_object)
+                color_dict.append(color_res)
+                if text_output_path:
+                    bboxes[i].append(color_res)
+            if passenger_detector:
+                try:
+                    img_resize = cv2.resize(cropped_object, (320, 240))
+                    img_resize = img_resize - 127.0
+                    img_resize = img_resize / 128.0
+                    passenger_count = passenger_detector.predict(np.expand_dims(img_resize, axis=0))
+                    passenger_count = len([i for i in passenger_count if i[1]>=passenger_threshold])
+                except:
+                    passenger_count = 0
+                passenger_dict.append(passenger_count)
+                if text_output_path:
+                    bboxes[i].append(passenger_count)
 
     if text_output_path:
         write_csv(bboxes, text_output_path)
@@ -216,6 +231,9 @@ def draw_bbox(image, bboxes, CLASSES=YOLO_COCO_CLASSES, show_label=True, show_co
 
             if color:
                 score_str += " {}".format(color_dict[i])
+
+            if passenger_detector:
+                score_str += " {}".format(passenger_dict[i])
 
             try:
                 label = "{}".format(NUM_CLASS[class_ind]) + score_str
