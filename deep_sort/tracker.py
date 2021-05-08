@@ -105,7 +105,7 @@ class Tracker:
             # Calculate the cost matrix cosine distance through the nearest neighbor
             cost_matrix = self.metric.distance(features, targets)
             # Calculate Mahalanobis distance and get a net state matrix
-            cost_matrix = gate_cost_matrix(
+            cost_matrix = self.gate_cost_matrix(
                 self.kf, cost_matrix, tracks, dets, track_indices,
                 detection_indices)
 

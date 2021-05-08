@@ -9,7 +9,7 @@ class FaceDetector:
 
     @staticmethod
     def load_model():
-        return tf.keras.models.load_model("../face_detection/RFB")
+        return tf.keras.models.load_model("face_detection/RFB")
 
     def predict(self, loaded_image):
         img_resize = cv2.resize(loaded_image, (320, 240))
