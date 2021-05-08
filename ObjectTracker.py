@@ -1,19 +1,10 @@
-# ================================================================
-#
-#   File name   : object_tracker.py
-#   Author      : PyLessons
-#   Created date: 2020-09-17
-#   Website     : https://pylessons.com/
-#   GitHub      : https://github.com/pythonlessons/TensorFlow-2.x-YOLOv3
-#   Description : code to track detected object from video or webcam
-#
-# ================================================================
 import os
 import cv2
 import numpy as np
 import tensorflow as tf
-from yolov3.utils import Load_Yolo_model, image_preprocess, postprocess_boxes, nms, draw_bbox, read_class_names, write_csv
+from yolov3.utils import load_yolo_model, image_preprocess, postprocess_boxes, nms, draw_bbox, read_class_names, write_csv
 from yolov3.configs import *
+from face_detection.FaceDetector import FaceDetector
 import time
 
 from deep_sort import nn_matching
@@ -24,12 +15,10 @@ from deep_sort import generate_detections as gdet
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
-# video_path = "./model_data/videoplayback.mp4"
-
-def object_tracking(Yolo, video_path, vid_output_path, text_output_path, input_size=416, show=False,
-                    CLASSES=YOLO_COCO_CLASSES, score_threshold=0.3, iou_threshold=0.45,
-                    rectangle_colors='', tracking=True, track_only=[], tracker_max_age=30,
-                    passenger_det=False, face_score_threshold=0.3, color="bincount"):
+def track_object(Yolo, video_path, vid_output_path, text_output_path, input_size=416, show=False,
+                 CLASSES=YOLO_COCO_CLASSES, score_threshold=0.3, iou_threshold=0.45,
+                 rectangle_colors='', tracking=True, track_only=[], tracker_max_age=30,
+                 passenger_det=False, face_score_threshold=0.3, color="bincount"):
     """
     Do detection on video
     :param Yolo: <model_obj> YOLO model for vehicle detection
@@ -50,10 +39,10 @@ def object_tracking(Yolo, video_path, vid_output_path, text_output_path, input_s
     :return:
     """
     if not Yolo:
-        Yolo = Load_Yolo_model()
+        Yolo = load_yolo_model()
 
     if passenger_det:
-        passenger_det = tf.keras.models.load_model("face_detection/RFB")
+        passenger_det = FaceDetector()
     else:
         passenger_det = None
 
@@ -111,8 +100,6 @@ def object_tracking(Yolo, video_path, vid_output_path, text_output_path, input_s
                 value = value.numpy()
                 pred_bbox.append(value)
 
-        # t1 = time.time()
-        # pred_bbox = Yolo.predict(image_data)
         t2 = time.time()
 
         pred_bbox = [tf.reshape(x, (-1, tf.shape(x)[-1])) for x in pred_bbox]
@@ -154,9 +141,9 @@ def object_tracking(Yolo, video_path, vid_output_path, text_output_path, input_s
             tracked_bboxes.append(bbox.tolist() + [tracking_id, index, track.class_confidence])  # Structure data, that we could use it with our draw_bbox function
 
         # draw detection on frame
-        # print(tracked_bboxes)
         image = draw_bbox(original_frame, tracked_bboxes, CLASSES=CLASSES, tracking=True, color=color,
-                          text_output_path=text_output_path, passenger_detector=passenger_det)
+                          text_output_path=text_output_path, passenger_detector=passenger_det,
+                          passenger_threshold=face_score_threshold)
 
         t3 = time.time()
         times.append(t2 - t1)
@@ -172,9 +159,6 @@ def object_tracking(Yolo, video_path, vid_output_path, text_output_path, input_s
         image = cv2.putText(image, "Time: {:.1f} FPS".format(fps), (0, 30), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1,
                             (0, 0, 255), 2)
 
-        # draw original yolo detection
-        # image = draw_bbox(image, bboxes, CLASSES=CLASSES, show_label=False, rectangle_colors=rectangle_colors, tracking=True)
-
         # print("Time: {:.2f}ms, Detection FPS: {:.1f}, total FPS: {:.1f}".format(ms, fps, fps2))
         if vid_output_path != '':
             out.write(image)
@@ -186,8 +170,3 @@ def object_tracking(Yolo, video_path, vid_output_path, text_output_path, input_s
                 break
 
     cv2.destroyAllWindows()
-
-
-# yolo = Load_Yolo_model()
-# object_tracking(yolo, "", "", input_size=YOLO_INPUT_SIZE, show=True, iou_threshold=0.1, rectangle_colors=(255, 0, 0),
-#                track_only=["car", "bus", "motorcycle", "truck", "bicycle"], score_threshold=0.7)

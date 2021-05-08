@@ -1,13 +1,3 @@
-#================================================================
-#
-#   File name   : yolov3.py
-#   Author      : PyLessons
-#   Created date: 2020-06-04
-#   Website     : https://pylessons.com/
-#   GitHub      : https://github.com/pythonlessons/TensorFlow-2.x-YOLOv3
-#   Description : main yolov3 functions
-#
-#================================================================
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, Input, LeakyReLU, ZeroPadding2D, BatchNormalization, MaxPool2D
@@ -28,6 +18,7 @@ class BatchNormalization(BatchNormalization):
             training = tf.constant(False)
         training = tf.logical_and(training, self.trainable)
         return super().call(x, training)
+
 
 def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True):
     if downsample:
@@ -120,7 +111,7 @@ def YOLOv3(input_layer, NUM_CLASS):
     conv = convolutional(conv, (3, 3,  512, 1024))
     conv = convolutional(conv, (1, 1, 1024,  512))
     conv_lobj_branch = convolutional(conv, (3, 3, 512, 1024))
-    
+
     # conv_lbbox is used to predict large-sized objects , Shape = [None, 13, 13, 255] 
     conv_lbbox = convolutional(conv_lobj_branch, (1, 1, 1024, 3*(NUM_CLASS + 5)), activate=False, bn=False)
 
@@ -150,10 +141,10 @@ def YOLOv3(input_layer, NUM_CLASS):
     conv = convolutional(conv, (3, 3, 128, 256))
     conv = convolutional(conv, (1, 1, 256, 128))
     conv_sobj_branch = convolutional(conv, (3, 3, 128, 256))
-    
+
     # conv_sbbox is used to predict small size objects, shape = [None, 52, 52, 255]
     conv_sbbox = convolutional(conv_sobj_branch, (1, 1, 256, 3*(NUM_CLASS +5)), activate=False, bn=False)
-        
+
     return [conv_sbbox, conv_mbbox, conv_lbbox]
 
 def YOLOv3_tiny(input_layer, NUM_CLASS):
@@ -162,7 +153,7 @@ def YOLOv3_tiny(input_layer, NUM_CLASS):
 
     conv = convolutional(conv, (1, 1, 1024, 256))
     conv_lobj_branch = convolutional(conv, (3, 3, 256, 512))
-    
+
     # conv_lbbox is used to predict large-sized objects , Shape = [None, 26, 26, 255]
     conv_lbbox = convolutional(conv_lobj_branch, (1, 1, 512, 3*(NUM_CLASS + 5)), activate=False, bn=False)
 
@@ -170,7 +161,7 @@ def YOLOv3_tiny(input_layer, NUM_CLASS):
     # upsample here uses the nearest neighbor interpolation method, which has the advantage that the
     # upsampling process does not need to learn, thereby reducing the network parameter  
     conv = upsample(conv)
-    
+
     conv = tf.concat([conv, route_1], axis=-1)
     conv_mobj_branch = convolutional(conv, (3, 3, 128, 256))
     # conv_mbbox is used to predict medium size objects, shape = [None, 13, 13, 255]
@@ -359,8 +350,8 @@ def compute_loss(pred, conv, label, bboxes, i=0, CLASSES=YOLO_COCO_CLASSES):
 
     prob_loss = respond_bbox * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_prob, logits=conv_raw_prob)
 
-    giou_loss = tf.reduce_mean(tf.reduce_sum(giou_loss, axis=[1,2,3,4]))
-    conf_loss = tf.reduce_mean(tf.reduce_sum(conf_loss, axis=[1,2,3,4]))
-    prob_loss = tf.reduce_mean(tf.reduce_sum(prob_loss, axis=[1,2,3,4]))
+    giou_loss = tf.reduce_mean(tf.reduce_sum(giou_loss, axis=[1, 2, 3, 4]))
+    conf_loss = tf.reduce_mean(tf.reduce_sum(conf_loss, axis=[1, 2, 3, 4]))
+    prob_loss = tf.reduce_mean(tf.reduce_sum(prob_loss, axis=[1, 2, 3, 4]))
 
     return giou_loss, conf_loss, prob_loss

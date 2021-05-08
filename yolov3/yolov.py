@@ -1,13 +1,3 @@
-#================================================================
-#
-#   File name   : yolov4.py
-#   Author      : PyLessons
-#   Created date: 2020-09-31
-#   Website     : https://pylessons.com/
-#   GitHub      : https://github.com/pythonlessons/TensorFlow-2.x-YOLOv3
-#   Description : main yolov3 & yolov4 functions
-#
-#================================================================
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, Input, LeakyReLU, ZeroPadding2D, BatchNormalization, MaxPool2D
@@ -77,7 +67,7 @@ def route_group(input_layer, groups, group_id):
     convs = tf.split(input_layer, num_or_size_splits=groups, axis=-1)
     return convs[group_id]
 
-def darknet53(input_data):
+def create_darknet53(input_data):
     input_data = convolutional(input_data, (3, 3,  3,  32))
     input_data = convolutional(input_data, (3, 3, 32,  64), downsample=True)
 
@@ -108,7 +98,7 @@ def darknet53(input_data):
 
     return route_1, route_2, input_data
 
-def cspdarknet53(input_data):
+def create_cspdarknet53(input_data):
     input_data = convolutional(input_data, (3, 3,  3,  32), activate_type="mish")
     input_data = convolutional(input_data, (3, 3, 32,  64), downsample=True, activate_type="mish")
 
@@ -175,7 +165,7 @@ def cspdarknet53(input_data):
 
     return route_1, route_2, input_data
 
-def darknet19_tiny(input_data):
+def create_darknet19_tiny(input_data):
     input_data = convolutional(input_data, (3, 3, 3, 16))
     input_data = MaxPool2D(2, 2, 'same')(input_data)
     input_data = convolutional(input_data, (3, 3, 16, 32))
@@ -193,7 +183,7 @@ def darknet19_tiny(input_data):
 
     return route_1, input_data
 
-def cspdarknet53_tiny(input_data): # not sure how this should be called
+def create_cspdarknet53_tiny(input_data): # not sure how this should be called
     input_data = convolutional(input_data, (3, 3, 3, 32), downsample=True)
     input_data = convolutional(input_data, (3, 3, 32, 64), downsample=True)
     input_data = convolutional(input_data, (3, 3, 64, 64))
@@ -235,9 +225,9 @@ def cspdarknet53_tiny(input_data): # not sure how this should be called
 
     return route_1, input_data
 
-def YOLOv3(input_layer, NUM_CLASS):
+def create_YOLOv3(input_layer, NUM_CLASS):
     # After the input layer enters the Darknet-53 network, we get three branches
-    route_1, route_2, conv = darknet53(input_layer)
+    route_1, route_2, conv = create_darknet53(input_layer)
     # See the orange module (DBL) in the figure above, a total of 5 Subconvolution operation
     conv = convolutional(conv, (1, 1, 1024,  512))
     conv = convolutional(conv, (3, 3,  512, 1024))
@@ -281,8 +271,8 @@ def YOLOv3(input_layer, NUM_CLASS):
         
     return [conv_sbbox, conv_mbbox, conv_lbbox]
 
-def YOLOv4(input_layer, NUM_CLASS):
-    route_1, route_2, conv = cspdarknet53(input_layer)
+def create_YOLOv4(input_layer, NUM_CLASS):
+    route_1, route_2, conv = create_cspdarknet53(input_layer)
 
     route = conv
     conv = convolutional(conv, (1, 1, 512, 256))
@@ -339,9 +329,9 @@ def YOLOv4(input_layer, NUM_CLASS):
 
     return [conv_sbbox, conv_mbbox, conv_lbbox]
 
-def YOLOv3_tiny(input_layer, NUM_CLASS):
+def create_YOLOv3_tiny(input_layer, NUM_CLASS):
     # After the input layer enters the Darknet-53 network, we get three branches
-    route_1, conv = darknet19_tiny(input_layer)
+    route_1, conv = create_darknet19_tiny(input_layer)
 
     conv = convolutional(conv, (1, 1, 1024, 256))
     conv_lobj_branch = convolutional(conv, (3, 3, 256, 512))
@@ -361,8 +351,8 @@ def YOLOv3_tiny(input_layer, NUM_CLASS):
 
     return [conv_mbbox, conv_lbbox]
 
-def YOLOv4_tiny(input_layer, NUM_CLASS):
-    route_1, conv = cspdarknet53_tiny(input_layer)
+def create_YOLOv4_tiny(input_layer, NUM_CLASS):
+    route_1, conv = create_cspdarknet53_tiny(input_layer)
 
     conv = convolutional(conv, (1, 1, 512, 256))
 
@@ -378,20 +368,20 @@ def YOLOv4_tiny(input_layer, NUM_CLASS):
 
     return [conv_mbbox, conv_lbbox]
 
-def Create_Yolo(input_size=416, channels=3, training=False, CLASSES=YOLO_COCO_CLASSES):
+def create_YOLO(input_size=416, channels=3, training=False, CLASSES=YOLO_COCO_CLASSES):
     NUM_CLASS = len(read_class_names(CLASSES))
     input_layer  = Input([input_size, input_size, channels])
 
     if TRAIN_YOLO_TINY:
         if YOLO_TYPE == "yolov4":
-            conv_tensors = YOLOv4_tiny(input_layer, NUM_CLASS)
+            conv_tensors = create_YOLOv4_tiny(input_layer, NUM_CLASS)
         if YOLO_TYPE == "yolov3":
-            conv_tensors = YOLOv3_tiny(input_layer, NUM_CLASS)
+            conv_tensors = create_YOLOv3_tiny(input_layer, NUM_CLASS)
     else:
         if YOLO_TYPE == "yolov4":
-            conv_tensors = YOLOv4(input_layer, NUM_CLASS)
+            conv_tensors = create_YOLOv4(input_layer, NUM_CLASS)
         if YOLO_TYPE == "yolov3":
-            conv_tensors = YOLOv3(input_layer, NUM_CLASS)
+            conv_tensors = create_YOLOv3(input_layer, NUM_CLASS)
 
     output_tensors = []
     for i, conv_tensor in enumerate(conv_tensors):
