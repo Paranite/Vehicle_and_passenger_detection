@@ -5,7 +5,7 @@ import colorsys
 import numpy as np
 import tensorflow as tf
 from yolov3.configs import *
-from yolov3.yolov import *
+from yolov3.yolo import *
 from tensorflow.python.saved_model import tag_constants
 from color_detection.color_detector import ColorDetector
 import csv
